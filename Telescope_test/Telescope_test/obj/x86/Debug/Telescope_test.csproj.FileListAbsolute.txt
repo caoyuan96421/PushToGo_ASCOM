@@ -1,0 +1,16 @@
+D:\ASCOM_Drivers\Telescope_test\Telescope_test\bin\Debug\ASCOM.PushToGo.Test.exe.config
+D:\ASCOM_Drivers\Telescope_test\Telescope_test\bin\Debug\ASCOM.PushToGo.Test.exe
+D:\ASCOM_Drivers\Telescope_test\Telescope_test\bin\Debug\ASCOM.PushToGo.Test.pdb
+D:\ASCOM_Drivers\Telescope_test\Telescope_test\bin\Debug\ASCOM.DeviceInterfaces.dll
+D:\ASCOM_Drivers\Telescope_test\Telescope_test\bin\Debug\ASCOM.DriverAccess.dll
+D:\ASCOM_Drivers\Telescope_test\Telescope_test\bin\Debug\ASCOM.Utilities.dll
+D:\ASCOM_Drivers\Telescope_test\Telescope_test\bin\Debug\ASCOM.Exceptions.dll
+D:\ASCOM_Drivers\Telescope_test\Telescope_test\bin\Debug\ASCOM.DeviceInterfaces.xml
+D:\ASCOM_Drivers\Telescope_test\Telescope_test\bin\Debug\ASCOM.DriverAccess.xml
+D:\ASCOM_Drivers\Telescope_test\Telescope_test\bin\Debug\ASCOM.Utilities.xml
+D:\ASCOM_Drivers\Telescope_test\Telescope_test\bin\Debug\ASCOM.Exceptions.xml
+D:\ASCOM_Drivers\Telescope_test\Telescope_test\obj\x86\Debug\Telescope_test.csprojAssemblyReference.cache
+D:\ASCOM_Drivers\Telescope_test\Telescope_test\obj\x86\Debug\Telescope_test.csproj.CoreCompileInputs.cache
+D:\ASCOM_Drivers\Telescope_test\Telescope_test\obj\x86\Debug\Telescope_test.csproj.CopyComplete
+D:\ASCOM_Drivers\Telescope_test\Telescope_test\obj\x86\Debug\ASCOM.PushToGo.Test.exe
+D:\ASCOM_Drivers\Telescope_test\Telescope_test\obj\x86\Debug\ASCOM.PushToGo.Test.pdb
