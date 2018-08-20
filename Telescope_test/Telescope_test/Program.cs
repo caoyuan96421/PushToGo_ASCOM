@@ -37,12 +37,11 @@ namespace ASCOM
             Console.WriteLine("description " + device.Description);
             Console.WriteLine("DriverInfo " + device.DriverInfo);
             Console.WriteLine("driverVersion " + device.DriverVersion);
-            
-            Console.WriteLine("RA " + device.RightAscension);
 
-            // TODO add more code to test the driver.
+                        // TODO add more code to test the driver.
             device.Connected = true;
 
+            Console.WriteLine("CurrentPos: " + device.RightAscension + " " + device.Declination);
 
             device.Connected = false;
             Console.WriteLine("Press Enter to finish");

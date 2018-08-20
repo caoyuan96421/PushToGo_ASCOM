@@ -42,6 +42,7 @@ using System.Globalization;
 using System.Collections;
 using ASCOM.PushToGo.Properties;
 using System.IO.Ports;
+using System.Linq;
 
 namespace ASCOM.PushToGo
 {
@@ -74,11 +75,6 @@ namespace ASCOM.PushToGo
         /// </summary>
         private static string driverDescription = "PushToGo Mount Driver";
 
-        internal static string comPortProfileName = "COM Port"; // Constants used for Profile persistence
-        internal static string comPortDefault = "COM1";
-        internal static string traceStateProfileName = "Trace Level";
-        internal static string traceStateDefault = "false";
-
         //internal static string comPort; // Variables to hold the currrent device configuration
 
         /// <summary>
@@ -102,6 +98,16 @@ namespace ASCOM.PushToGo
         internal static TraceLogger tl;
 
         /// <summary>
+        /// Transformation for various conversion between coordinate systems
+        /// </summary>
+        private Astrometry.Transform.Transform trans;
+
+        /// <summary>
+        /// Serial object for communication
+        /// </summary>
+        private SerialPort serial;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="PushToGo"/> class.
         /// Must be public for COM registration.
         /// </summary>
@@ -109,12 +115,16 @@ namespace ASCOM.PushToGo
         {
             tl = new TraceLogger("", "PushToGo");
             ReadProfile(); // Read device configuration from the ASCOM Profile store
+            tl.Enabled = Settings.Default.traceEnabled;
 
             tl.LogMessage("Telescope", "Starting initialisation");
 
             connectedState = false; // Initialise connected to false
             utilities = new Util(); //Initialise util object
             astroUtilities = new AstroUtils(); // Initialise astro utilities object
+            trans = new Astrometry.Transform.Transform();
+            serial = new SerialPort();
+
             //TODO: Implement your additional construction here
 
             tl.LogMessage("Telescope", "Completed initialisation");
@@ -140,14 +150,9 @@ namespace ASCOM.PushToGo
             if (IsConnected)
                 System.Windows.Forms.MessageBox.Show("Already connected, just press OK");
 
-            using (SetupDialogForm F = new SetupDialogForm())
-            {
-                var result = F.ShowDialog();
-                if (result == System.Windows.Forms.DialogResult.OK)
-                {
-                    WriteProfile(); // Persist device configuration values to the ASCOM Profile store
-                }
-            }
+            new SetupDialogForm().ShowDialog();
+
+            tl.Enabled = Settings.Default.traceEnabled;
         }
 
         public ArrayList SupportedActions
@@ -161,67 +166,93 @@ namespace ASCOM.PushToGo
 
         public string Action(string actionName, string actionParameters)
         {
-            LogMessage("", "Action {0}, parameters {1} not implemented", actionName, actionParameters);
-            throw new ASCOM.ActionNotImplementedException("Action " + actionName + " is not implemented by this driver");
+            switch (actionName)
+            {
+                default:
+                    LogMessage("", "Action {0}, parameters {1} not implemented", actionName, actionParameters);
+                    throw new ASCOM.ActionNotImplementedException("Action " + actionName + " is not implemented by this driver");
+            }
         }
 
         public void CommandBlind(string command, bool raw)
         {
-            CheckConnected("CommandBlind");
-            // Call CommandString and return as soon as it finishes
-            this.CommandString(command, raw);
-            // or
-            throw new ASCOM.MethodNotImplementedException("CommandBlind");
-            // DO NOT have both these sections!  One or the other
+            CheckConnected("CommandBlind" + " " + command);
+            lock (serial)
+            {
+                serial.WriteLine(command + "\n");
+            }
         }
 
         public bool CommandBool(string command, bool raw)
         {
-            CheckConnected("CommandBool");
+            CheckConnected("CommandBool" + " " + command);
             string ret = CommandString(command, raw);
-            // TODO decode the return string and return true or false
-            // or
-            throw new ASCOM.MethodNotImplementedException("CommandBool");
-            // DO NOT have both these sections!  One or the other
+            return ret == "true" ? true : false;
         }
-        
+
 
         public string CommandString(string command, bool raw)
         {
-            CheckConnected("CommandString");
+            CheckConnected("CommandString" + " " + command);
             // it's a good idea to put all the low level communication with the device here,
             // then all communication calls this function
             // you need something to ensure that only one command is in progress at a time
-            lock (this) {
-
-
-                SerialPort serial = new SerialPort();
-                serial.PortName = Settings.Default.comPort;
-                serial.BaudRate = 115200;
-                serial.Parity = Parity.None;
-                serial.DataBits = 8;
-                serial.StopBits = StopBits.One;
-                serial.Handshake = Handshake.None;
-                serial.ReadTimeout = 500;
-                serial.WriteTimeout = 500;
-                serial.NewLine = "\n";
-
-                serial.Open();
-
-                string ret = "";
-                serial.WriteLine(command);
-
-                string cmd = command.Split(' ')[0];
-
-                while (true)
+            string ret = "";
+            lock (this)
+            {
+                lock (serial)
                 {
-                    string line = serial.ReadLine();
-                    string[] s = line.Split(' ');
+                    serial.WriteLine(command + "\n");
                 }
 
+                string cmd = command.Split(' ')[0];
+                string response = serial.ReadLine().TrimEnd();
+
+                if (response == "Unknown command")
+                {
+                    return "";
+                }
+
+                do
+                {
+                    string[] s = response.Split(' ');
+                    if (s.Length != 0)
+                    {
+                        // Empty string
+                        int retCode;
+                        if (int.TryParse(s[0], out retCode))
+                        {
+                            if (s.Length >= 2 && s[1] == cmd)
+                            {
+                                if (raw)
+                                {
+                                    // Append to the output if in raw mode
+                                    ret = ret + response + "\n";
+                                }
+                                break;
+                            }
+                        }
+
+                        if(s[0] == cmd)
+                        {
+                            // Message addressed to this command
+                            if (raw)
+                            {
+                                // Append to the output if in raw mode
+                                ret = ret + response + "\n";
+                            }
+                            else
+                            {
+                                // Append the rest of the response to the output
+                                ret = ret + String.Join(" ", s.Skip(1).ToArray()) + "\n";
+                            }
+                        }
+                    }
+                    response = serial.ReadLine().TrimEnd();
+                } while (true);
+               
             }
             return ret;
-            //throw new ASCOM.MethodNotImplementedException("CommandString");
         }
 
         public void Dispose()
@@ -234,6 +265,10 @@ namespace ASCOM.PushToGo
             utilities = null;
             astroUtilities.Dispose();
             astroUtilities = null;
+            serial.Dispose();
+            serial = null;
+            trans.Dispose();
+            trans = null;
         }
 
         public bool Connected
@@ -253,20 +288,32 @@ namespace ASCOM.PushToGo
                 {
                     connectedState = true;
                     LogMessage("Connected Set", "Connecting to port {0}", Settings.Default.comPort);
-                    // TODO connect to the device
+
+                    serial.PortName = Settings.Default.comPort;
+                    serial.BaudRate = 115200;
+                    serial.Parity = Parity.None;
+                    serial.DataBits = 8;
+                    serial.StopBits = StopBits.One;
+                    serial.Handshake = Handshake.None;
+                    serial.ReadTimeout = 300000;
+                    serial.WriteTimeout = 500;
+                    serial.NewLine = "\n";
+
+                    serial.Open();
                 }
                 else
                 {
                     connectedState = false;
                     LogMessage("Connected Set", "Disconnecting from port {0}", Settings.Default.comPort);
-                    // TODO disconnect from the device
+
+                    if (serial.IsOpen)
+                        serial.Close();
                 }
             }
         }
 
         public string Description
         {
-            // TODO customise this device description
             get
             {
                 tl.LogMessage("Description Get", driverDescription);
@@ -280,7 +327,7 @@ namespace ASCOM.PushToGo
             {
                 Version version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
                 // TODO customise this driver description
-                string driverInfo = "Information about the driver itself. Version: " + String.Format(CultureInfo.InvariantCulture, "{0}.{1}", version.Major, version.Minor);
+                string driverInfo = "PushToGo Mount ASCOM Driver. Version: " + String.Format(CultureInfo.InvariantCulture, "{0}.{1}", version.Major, version.Minor);
                 tl.LogMessage("DriverInfo Get", driverInfo);
                 return driverInfo;
             }
@@ -311,7 +358,7 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                string name = "Short driver name - please customise";
+                string name = "PushToGo";
                 tl.LogMessage("Name Get", name);
                 return name;
             }
@@ -319,11 +366,66 @@ namespace ASCOM.PushToGo
 
         #endregion
 
+        #region Helper functions
+        private bool getPointingEq(out double ra, out double dec)
+        {
+            ra = 0;
+            dec = 0;
+            string[] pos = CommandString("read", false).Split(' ');
+            if (pos.Length != 2)
+                return false;
+            if (!Double.TryParse(pos[0], out ra))
+                return false;
+            if (!Double.TryParse(pos[1], out dec))
+                return false;
+
+            return true;
+        }
+
+        private bool getPointingAltAz(out double alt, out double az)
+        {
+            alt = az = 0;
+
+            if (!getPointingEq(out double ra, out double dec))
+                return false;
+
+            lock (trans)
+            {
+                var jd = utilities.DateUTCToJulian(DateTime.UtcNow);
+                trans.SetJ2000(ra, dec);
+                trans.SiteLatitude = SiteLatitude;
+                trans.SiteLongitude = SiteLongitude;
+                trans.JulianDateUTC = jd;
+                alt = trans.ElevationTopocentric;
+                az = trans.AzimuthTopocentric;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Low-level slew to ra/dec
+        /// </summary>
+        /// <param name="ra">Right ascension</param>
+        /// <param name="dec">Declination</param>
+        /// <param name="sync">Sync or Async</param>
+        private void slewTo(double ra, double dec, bool sync)
+        {
+            if (sync)
+            {
+                CommandString("goto " + ra.ToString() + " " + dec.ToString(), false);
+            }
+            else
+            {
+                CommandBlind("goto " + ra.ToString() + " " + dec.ToString(), false);
+            }
+        }
+        #endregion
+
         #region ITelescope Implementation
         public void AbortSlew()
         {
-            tl.LogMessage("AbortSlew", "Not implemented");
-            throw new ASCOM.MethodNotImplementedException("AbortSlew");
+            tl.LogMessage("AbortSlew", "");
+            CommandBlind("stop", false);
         }
 
         public AlignmentModes AlignmentMode
@@ -339,8 +441,9 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("Altitude", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("Altitude", false);
+                getPointingAltAz(out double alt, out double az);
+                tl.LogMessage("Altitude", "Get - " + utilities.DegreesToDMS(alt, ":", ":"));
+                return alt;
             }
         }
 
@@ -390,8 +493,9 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("Azimuth Get", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("Azimuth", false);
+                getPointingAltAz(out double alt, out double az);
+                tl.LogMessage("Azimuth", "Get - " + utilities.DegreesToDMS(az, ":", ":"));
+                return az;
             }
         }
 
@@ -420,8 +524,8 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("CanPark", "Get - " + false.ToString());
-                return false;
+                tl.LogMessage("CanPark", "Get - " + true.ToString());
+                return true;
             }
         }
 
@@ -429,8 +533,8 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("CanPulseGuide", "Get - " + false.ToString());
-                return false;
+                tl.LogMessage("CanPulseGuide", "Get - " + true.ToString());
+                return true;
             }
         }
 
@@ -438,8 +542,8 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("CanSetDeclinationRate", "Get - " + false.ToString());
-                return false;
+                tl.LogMessage("CanSetDeclinationRate", "Get - " + true.ToString());
+                return true;
             }
         }
 
@@ -447,8 +551,8 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("CanSetGuideRates", "Get - " + false.ToString());
-                return false;
+                tl.LogMessage("CanSetGuideRates", "Get - " + true.ToString());
+                return true;
             }
         }
 
@@ -474,8 +578,8 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("CanSetRightAscensionRate", "Get - " + false.ToString());
-                return false;
+                tl.LogMessage("CanSetRightAscensionRate", "Get - " + true.ToString());
+                return true;
             }
         }
 
@@ -483,8 +587,8 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("CanSetTracking", "Get - " + false.ToString());
-                return false;
+                tl.LogMessage("CanSetTracking", "Get - " + true.ToString());
+                return true;
             }
         }
 
@@ -492,8 +596,8 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("CanSlew", "Get - " + false.ToString());
-                return false;
+                tl.LogMessage("CanSlew", "Get - " + true.ToString());
+                return true;
             }
         }
 
@@ -501,8 +605,8 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("CanSlewAltAz", "Get - " + false.ToString());
-                return false;
+                tl.LogMessage("CanSlewAltAz", "Get - " + true.ToString());
+                return true;
             }
         }
 
@@ -510,8 +614,8 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("CanSlewAltAzAsync", "Get - " + false.ToString());
-                return false;
+                tl.LogMessage("CanSlewAltAzAsync", "Get - " + true.ToString());
+                return true;
             }
         }
 
@@ -519,8 +623,8 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("CanSlewAsync", "Get - " + false.ToString());
-                return false;
+                tl.LogMessage("CanSlewAsync", "Get - " + true.ToString());
+                return true;
             }
         }
 
@@ -546,8 +650,8 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("CanUnpark", "Get - " + false.ToString());
-                return false;
+                tl.LogMessage("CanUnpark", "Get - " + true.ToString());
+                return true;
             }
         }
 
@@ -555,9 +659,9 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                double declination = 0.0;
-                tl.LogMessage("Declination", "Get - " + utilities.DegreesToDMS(declination, ":", ":"));
-                return declination;
+                getPointingEq(out double ra, out double dec);
+                tl.LogMessage("Declination", "Get - " + utilities.DegreesToDMS(dec, ":", ":"));
+                return dec;
             }
         }
 
@@ -666,23 +770,41 @@ namespace ASCOM.PushToGo
 
         public void Park()
         {
-            tl.LogMessage("Park", "Not implemented");
-            throw new ASCOM.MethodNotImplementedException("Park");
+            tl.LogMessage("Park", "");
+            CommandString("goto index", false);
         }
 
         public void PulseGuide(GuideDirections Direction, int Duration)
         {
-            tl.LogMessage("PulseGuide", "Not implemented");
-            throw new ASCOM.MethodNotImplementedException("PulseGuide");
+            string dir = "";
+            switch (Direction)
+            {
+                case GuideDirections.guideNorth:
+                    dir = "north";
+                    break;
+                case GuideDirections.guideSouth:
+                    dir = "south";
+                    break;
+                case GuideDirections.guideEast:
+                    dir = "east";
+                    break;
+                case GuideDirections.guideWest:
+                    dir = "west";
+                    break;
+                default:
+                    return;
+            }
+            tl.LogMessage("PulseGuide", dir + " " + Duration.ToString() + " ms");
+            CommandString("guide " + dir + " " + Duration.ToString(), false);
         }
 
         public double RightAscension
         {
             get
             {
-                double rightAscension = 0.0;
-                tl.LogMessage("RightAscension", "Get - " + utilities.HoursToHMS(rightAscension));
-                return rightAscension;
+                getPointingEq(out double ra, out double dec);
+                tl.LogMessage("RightAscension", "Get - " + utilities.HoursToHMS(ra));
+                return ra;
             }
         }
 
@@ -765,13 +887,18 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("SiteLatitude Get", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("SiteLatitude", false);
+                if(!Double.TryParse(CommandString("config latitude", false), out double lat))
+                {
+                    throw new ASCOM.ValueNotSetException("SiteLatitude");
+                }
+                tl.LogMessage("SiteLatitude Get", lat.ToString());
+                return lat;
             }
             set
             {
-                tl.LogMessage("SiteLatitude Set", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("SiteLatitude", true);
+                tl.LogMessage("SiteLatitude Set", value.ToString());
+                CommandString("config latitude " + value.ToString(), false);
+                CommandBlind("save", false);
             }
         }
 
@@ -779,13 +906,18 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("SiteLongitude Get", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("SiteLongitude", false);
+                if (!Double.TryParse(CommandString("config longitude", false), out double lon))
+                {
+                    throw new ASCOM.ValueNotSetException("SiteLongitude");
+                }
+                tl.LogMessage("SiteLatitude Get", lon.ToString());
+                return lon;
             }
             set
             {
-                tl.LogMessage("SiteLongitude Set", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("SiteLongitude", true);
+                tl.LogMessage("SiteLongitude Set", value.ToString());
+                CommandString("config longitude " + value.ToString(), false);
+                CommandBlind("save", false);
             }
         }
 
@@ -793,58 +925,82 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("SlewSettleTime Get", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("SlewSettleTime", false);
+                tl.LogMessage("SlewSettleTime Get", Settings.Default.slewSettleTime.ToString());
+                return Settings.Default.slewSettleTime;
             }
             set
             {
-                tl.LogMessage("SlewSettleTime Set", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("SlewSettleTime", true);
+                tl.LogMessage("SlewSettleTime Set", value.ToString());
+                Settings.Default.slewSettleTime = value;
             }
         }
 
         public void SlewToAltAz(double Azimuth, double Altitude)
         {
-            tl.LogMessage("SlewToAltAz", "Not implemented");
-            throw new ASCOM.MethodNotImplementedException("SlewToAltAz");
+            tl.LogMessage("SlewToAltAz", "");
+            double ra = 0, dec = 0;
+            lock (trans)
+            {
+                var jd = utilities.DateUTCToJulian(DateTime.UtcNow);
+                trans.SetAzimuthElevation(Azimuth, Altitude);
+                trans.SiteLatitude = SiteLatitude;
+                trans.SiteLongitude = SiteLongitude;
+                trans.JulianDateUTC = jd;
+                ra = trans.RAJ2000;
+                dec = trans.DecJ2000;
+            }
+            slewTo(ra, dec, true);
         }
 
         public void SlewToAltAzAsync(double Azimuth, double Altitude)
         {
-            tl.LogMessage("SlewToAltAzAsync", "Not implemented");
-            throw new ASCOM.MethodNotImplementedException("SlewToAltAzAsync");
+            tl.LogMessage("SlewToAltAzAsync", "");
+
+            double ra = 0, dec = 0;
+            lock (trans)
+            {
+                var jd = utilities.DateUTCToJulian(DateTime.UtcNow);
+                trans.SetAzimuthElevation(Azimuth, Altitude);
+                trans.SiteLatitude = SiteLatitude;
+                trans.SiteLongitude = SiteLongitude;
+                trans.JulianDateUTC = jd;
+                ra = trans.RAJ2000;
+                dec = trans.DecJ2000;
+            }
+            slewTo(ra, dec, false);
         }
 
         public void SlewToCoordinates(double RightAscension, double Declination)
         {
-            tl.LogMessage("SlewToCoordinates", "Not implemented");
-            throw new ASCOM.MethodNotImplementedException("SlewToCoordinates");
+            tl.LogMessage("SlewToCoordinates", "");
+            slewTo(RightAscension, Declination, true);
         }
 
         public void SlewToCoordinatesAsync(double RightAscension, double Declination)
         {
-            tl.LogMessage("SlewToCoordinatesAsync", "Not implemented");
-            throw new ASCOM.MethodNotImplementedException("SlewToCoordinatesAsync");
+            tl.LogMessage("SlewToCoordinatesAsync", "");
+            slewTo(RightAscension, Declination, false);
         }
 
         public void SlewToTarget()
         {
-            tl.LogMessage("SlewToTarget", "Not implemented");
-            throw new ASCOM.MethodNotImplementedException("SlewToTarget");
+            tl.LogMessage("SlewToTarget", "");
+            SlewToCoordinates(TargetRightAscension, TargetDeclination);
         }
 
         public void SlewToTargetAsync()
         {
-            tl.LogMessage("SlewToTargetAsync", "Not implemented");
-            throw new ASCOM.MethodNotImplementedException("SlewToTargetAsync");
+            tl.LogMessage("SlewToTargetAsync", "");
+            SlewToCoordinatesAsync(TargetRightAscension, TargetDeclination);
         }
 
         public bool Slewing
         {
             get
             {
-                tl.LogMessage("Slewing Get", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("Slewing", false);
+                bool slewing = CommandString("status", false) == "slewing";
+                tl.LogMessage("Slewing Get", slewing.ToString());
+                return slewing;
             }
         }
 
@@ -866,17 +1022,20 @@ namespace ASCOM.PushToGo
             throw new ASCOM.MethodNotImplementedException("SyncToTarget");
         }
 
+        private double targetDec = 0;
+        private double targetRA = 0;
+
         public double TargetDeclination
         {
             get
             {
-                tl.LogMessage("TargetDeclination Get", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("TargetDeclination", false);
+                tl.LogMessage("TargetDeclination Get", targetDec.ToString());
+                return targetDec;
             }
             set
             {
-                tl.LogMessage("TargetDeclination Set", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("TargetDeclination", true);
+                tl.LogMessage("TargetDeclination Set", value.ToString());
+                targetDec = value;
             }
         }
 
@@ -884,13 +1043,13 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("TargetRightAscension Get", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("TargetRightAscension", false);
+                tl.LogMessage("TargetRightAscension Get", targetRA.ToString());
+                return targetRA;
             }
             set
             {
-                tl.LogMessage("TargetRightAscension Set", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("TargetRightAscension", true);
+                tl.LogMessage("TargetRightAscension Set", value.ToString());
+                targetRA = value;
             }
         }
 
@@ -898,14 +1057,22 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                bool tracking = true;
+                string status = CommandString("status", false);
+                bool tracking = status.Contains("tracking");
                 tl.LogMessage("Tracking", "Get - " + tracking.ToString());
                 return tracking;
             }
             set
             {
-                tl.LogMessage("Tracking Set", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("Tracking", true);
+                tl.LogMessage("Tracking Set", value.ToString());
+                if (value)
+                {
+                    CommandBlind("track", false);
+                }
+                else
+                {
+                    CommandBlind("stop track", false);
+                }
             }
         }
 
@@ -913,13 +1080,43 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("TrackingRate Get", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("TrackingRate", false);
+                DriveRates dr = DriveRates.driveSidereal;
+                double rate = Double.Parse(CommandString("speed track", false));
+                if (Math.Abs(rate - 0.9763) <= 1e-4)
+                {
+                    dr = DriveRates.driveLunar;
+                }
+                else if (Math.Abs(rate - 0.9973) <= 1e-4)
+                {
+                    dr = DriveRates.driveSolar;
+                }
+                else if (Math.Abs(rate - 0.9998) <= 1e-4)
+                {
+                    dr = DriveRates.driveSolar;
+                }
+                tl.LogMessage("TrackingRate Get", dr.ToString());
+                return dr;
             }
             set
             {
-                tl.LogMessage("TrackingRate Set", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("TrackingRate", true);
+                tl.LogMessage("TrackingRate Set", value.ToString());
+                switch (value)
+                {
+                    case DriveRates.driveSidereal:
+                        CommandBlind("speed track 1.000000", false);
+                        break;
+                    case DriveRates.driveLunar:
+                        CommandBlind("speed track 0.976331", false);
+                        break;
+                    case DriveRates.driveSolar:
+                        CommandBlind("speed track 0.997274", false);
+                        break;
+                    case DriveRates.driveKing:
+                        CommandBlind("speed track 0.999727", false);
+                        break;
+                    default:
+                        break;
+                }
             }
         }
 
@@ -954,8 +1151,7 @@ namespace ASCOM.PushToGo
 
         public void Unpark()
         {
-            tl.LogMessage("Unpark", "Not implemented");
-            throw new ASCOM.MethodNotImplementedException("Unpark");
+            tl.LogMessage("Unpark", "");
         }
 
         #endregion
@@ -1045,8 +1241,12 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                // TODO check that the driver hardware connection exists and is connected to the hardware
-                return connectedState;
+                // check that the driver hardware connection exists and is connected to the hardware
+                if (!connectedState)
+                    return false;
+                if (!serial.IsOpen)
+                    return false;
+                return true;
             }
         }
 
@@ -1068,12 +1268,6 @@ namespace ASCOM.PushToGo
         internal void ReadProfile()
         {
             Settings.Default.Reload();
-            //using (Profile driverProfile = new Profile())
-            //{
-            //    driverProfile.DeviceType = "Telescope";
-            tl.Enabled = Convert.ToBoolean(new Profile().GetValue(driverID, traceStateProfileName, string.Empty, traceStateDefault));
-            //    Settings.Default.comPort = driverProfile.GetValue(driverID, comPortProfileName, string.Empty, comPortDefault);
-            //}
         }
 
         /// <summary>
@@ -1082,12 +1276,6 @@ namespace ASCOM.PushToGo
         internal void WriteProfile()
         {
             Settings.Default.Save();
-            //using (Profile driverProfile = new Profile())
-            //{
-            //    driverProfile.DeviceType = "Telescope";
-            new Profile().WriteValue(driverID, traceStateProfileName, tl.Enabled.ToString());
-            //    driverProfile.WriteValue(driverID, comPortProfileName, comPort.ToString());
-            //}
         }
 
         /// <summary>

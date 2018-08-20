@@ -23,17 +23,13 @@ namespace ASCOM.PushToGo
 
         private void cmdOK_Click(object sender, EventArgs e) // OK button event handler
         {
-            // Place any validation constraint checks here
-            // Update the state variables with results from the dialogue
-            //Telescope.comPort = (string)comboBoxComPort.SelectedItem;
-            Telescope.tl.Enabled = chkTrace.Checked;
-
             Settings.Default.Save();
             Close();
         }
 
         private void cmdCancel_Click(object sender, EventArgs e) // Cancel button event handler
         {
+            Settings.Default.Reload();
             Close();
         }
 
