@@ -14,11 +14,33 @@ namespace ASCOM.PushToGo
     [ComVisible(false)]					// Form not registered for COM!
     public partial class SetupDialogForm : Form
     {
-        public SetupDialogForm()
+        private Telescope ts = null;
+
+        public SetupDialogForm(Telescope telescope)
         {
             InitializeComponent();
             // Initialise current values of user settings from the ASCOM Profile
             InitUI();
+
+            // If we're already connected
+            if(telescope != null)
+            {
+                ts = telescope;
+
+                textBoxLatitude.ReadOnly = false;
+                textBoxLatitude.Text = new ASCOM.Utilities.Util().DegreesToDMS(ts.SiteLatitude);
+
+                textBoxLongitude.ReadOnly = false;
+                textBoxLongitude.Text = new ASCOM.Utilities.Util().DegreesToDMS(ts.SiteLongitude);
+
+                // COM port cannot be changed
+                comboBoxComPort.Enabled = false;
+            }
+            else
+            {
+                textBoxLatitude.Text = "";
+                textBoxLongitude.Text = "";
+            }
         }
 
         private void cmdOK_Click(object sender, EventArgs e) // OK button event handler
@@ -52,7 +74,6 @@ namespace ASCOM.PushToGo
 
         private void InitUI()
         {
-            chkTrace.Checked = Telescope.tl.Enabled;
             // set the list of com ports to those that are currently available
             comboBoxComPort.Items.Clear();
             comboBoxComPort.Items.AddRange(System.IO.Ports.SerialPort.GetPortNames());      // use System.IO because it's static
@@ -61,6 +82,63 @@ namespace ASCOM.PushToGo
             {
                 comboBoxComPort.SelectedItem = Settings.Default.comPort;
             }
+
+            textBoxFL.Text = Settings.Default.focalLength.ToString();
+            textBoxAperture.Text = Settings.Default.aperture.ToString();
+            textBoxArea.Text = Settings.Default.area.ToString();
+            textBoxElevation.Text = Settings.Default.elevation.ToString();
+            textBoxTemp.Text = Settings.Default.temperature.ToString();
         }
+
+        private void textBoxFL_TextChanged(object sender, EventArgs e)
+        {
+            if (Double.TryParse(textBoxFL.Text, out double fl))
+                Settings.Default.focalLength = fl;
+        }
+
+        private void textBoxAperture_TextChanged(object sender, EventArgs e)
+        {
+            if(Double.TryParse(textBoxAperture.Text, out double ap))
+                Settings.Default.aperture = ap;
+        }
+
+        private void textBoxArea_TextChanged(object sender, EventArgs e)
+        {
+            if (Double.TryParse(textBoxArea.Text, out double area))
+                Settings.Default.area = area;
+        }
+
+        private void textBoxElevation_TextChanged(object sender, EventArgs e)
+        {
+            if (Double.TryParse(textBoxElevation.Text, out double elev))
+                Settings.Default.elevation = elev;
+        }
+
+        private void textBoxTemp_TextChanged(object sender, EventArgs e)
+        {
+            if (Double.TryParse(textBoxTemp.Text, out double t))
+                Settings.Default.temperature = t;
+        }
+
+        private void textBoxLatitude_TextChanged(object sender, EventArgs e)
+        {
+            if (ts != null)
+            {
+                var util = new ASCOM.Utilities.Util();
+                ts.SiteLatitude = util.DMSToDegrees(textBoxLatitude.Text);
+                textBoxLatitude.Text = util.DegreesToDMS(ts.SiteLatitude);
+            }
+        }
+
+        private void textBoxLongitude_TextChanged(object sender, EventArgs e)
+        {
+            if (ts != null)
+            {
+                var util = new ASCOM.Utilities.Util();
+                ts.SiteLongitude = util.DMSToDegrees(textBoxLongitude.Text);
+                textBoxLongitude.Text = util.DegreesToDMS(ts.SiteLongitude);
+            }
+        }
+        
     }
 }

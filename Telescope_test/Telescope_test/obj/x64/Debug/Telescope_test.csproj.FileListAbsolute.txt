@@ -1,0 +1,15 @@
+D:\GitHub\PushToGo_ASCOM\Telescope_test\Telescope_test\bin\x64\Debug\ASCOM.PushToGo.Test.exe.config
+D:\GitHub\PushToGo_ASCOM\Telescope_test\Telescope_test\bin\x64\Debug\ASCOM.PushToGo.Test.exe
+D:\GitHub\PushToGo_ASCOM\Telescope_test\Telescope_test\bin\x64\Debug\ASCOM.PushToGo.Test.pdb
+D:\GitHub\PushToGo_ASCOM\Telescope_test\Telescope_test\bin\x64\Debug\ASCOM.DeviceInterfaces.dll
+D:\GitHub\PushToGo_ASCOM\Telescope_test\Telescope_test\bin\x64\Debug\ASCOM.DriverAccess.dll
+D:\GitHub\PushToGo_ASCOM\Telescope_test\Telescope_test\bin\x64\Debug\ASCOM.Utilities.dll
+D:\GitHub\PushToGo_ASCOM\Telescope_test\Telescope_test\bin\x64\Debug\ASCOM.Exceptions.dll
+D:\GitHub\PushToGo_ASCOM\Telescope_test\Telescope_test\bin\x64\Debug\ASCOM.DeviceInterfaces.xml
+D:\GitHub\PushToGo_ASCOM\Telescope_test\Telescope_test\bin\x64\Debug\ASCOM.DriverAccess.xml
+D:\GitHub\PushToGo_ASCOM\Telescope_test\Telescope_test\bin\x64\Debug\ASCOM.Utilities.xml
+D:\GitHub\PushToGo_ASCOM\Telescope_test\Telescope_test\bin\x64\Debug\ASCOM.Exceptions.xml
+D:\GitHub\PushToGo_ASCOM\Telescope_test\Telescope_test\obj\x64\Debug\Telescope_test.csproj.CoreCompileInputs.cache
+D:\GitHub\PushToGo_ASCOM\Telescope_test\Telescope_test\obj\x64\Debug\Telescope_test.csproj.CopyComplete
+D:\GitHub\PushToGo_ASCOM\Telescope_test\Telescope_test\obj\x64\Debug\ASCOM.PushToGo.Test.exe
+D:\GitHub\PushToGo_ASCOM\Telescope_test\Telescope_test\obj\x64\Debug\ASCOM.PushToGo.Test.pdb

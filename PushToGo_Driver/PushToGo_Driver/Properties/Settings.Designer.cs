@@ -58,5 +58,77 @@ namespace ASCOM.PushToGo.Properties {
                 this["slewSettleTime"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public double elevation {
+            get {
+                return ((double)(this["elevation"]));
+            }
+            set {
+                this["elevation"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool refraction {
+            get {
+                return ((bool)(this["refraction"]));
+            }
+            set {
+                this["refraction"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public double focalLength {
+            get {
+                return ((double)(this["focalLength"]));
+            }
+            set {
+                this["focalLength"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0.2")]
+        public double aperture {
+            get {
+                return ((double)(this["aperture"]));
+            }
+            set {
+                this["aperture"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0.04")]
+        public double area {
+            get {
+                return ((double)(this["area"]));
+            }
+            set {
+                this["area"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("25")]
+        public double temperature {
+            get {
+                return ((double)(this["temperature"]));
+            }
+            set {
+                this["temperature"] = value;
+            }
+        }
     }
 }

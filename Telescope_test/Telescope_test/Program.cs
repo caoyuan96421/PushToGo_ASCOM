@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 namespace ASCOM
 {
@@ -38,10 +39,24 @@ namespace ASCOM
             Console.WriteLine("DriverInfo " + device.DriverInfo);
             Console.WriteLine("driverVersion " + device.DriverVersion);
 
-                        // TODO add more code to test the driver.
             device.Connected = true;
 
             Console.WriteLine("CurrentPos: " + device.RightAscension + " " + device.Declination);
+            Console.WriteLine("CurrentAltAzPos: " + device.Altitude + " " + device.Azimuth);
+            
+            if (device.AtPark)
+                device.Unpark();
+
+            device.Tracking = true;
+
+            Console.WriteLine("Test slewing");
+            device.SlewToCoordinates(15, 50);
+
+            Thread.Sleep(500);
+            device.SetupDialog(); // show setup
+
+            Console.WriteLine("Test homing");
+            device.Park();
 
             device.Connected = false;
             Console.WriteLine("Press Enter to finish");

@@ -64,6 +64,8 @@ namespace ASCOM.PushToGo
     [ClassInterface(ClassInterfaceType.None)]
     public class Telescope : ITelescopeV3
     {
+        private const double sidereal_speed = 0.00417807462;
+
         /// <summary>
         /// ASCOM DeviceID (COM ProgID) for this driver.
         /// The DeviceID is used by ASCOM applications to load the driver at runtime.
@@ -148,9 +150,13 @@ namespace ASCOM.PushToGo
             // consider only showing the setup dialog if not connected
             // or call a different dialog if connected
             if (IsConnected)
-                System.Windows.Forms.MessageBox.Show("Already connected, just press OK");
-
-            new SetupDialogForm().ShowDialog();
+            {
+                new SetupDialogForm(this).ShowDialog();
+            }
+            else
+            {
+                new SetupDialogForm(null).ShowDialog();
+            }
 
             tl.Enabled = Settings.Default.traceEnabled;
         }
@@ -379,6 +385,8 @@ namespace ASCOM.PushToGo
             if (!Double.TryParse(pos[1], out dec))
                 return false;
 
+            ra = astroUtilities.ConditionRA(ra / 15);
+
             return true;
         }
 
@@ -392,10 +400,14 @@ namespace ASCOM.PushToGo
             lock (trans)
             {
                 var jd = utilities.DateUTCToJulian(DateTime.UtcNow);
-                trans.SetJ2000(ra, dec);
                 trans.SiteLatitude = SiteLatitude;
                 trans.SiteLongitude = SiteLongitude;
+                trans.SiteElevation = Settings.Default.elevation;
+                trans.SiteTemperature = Settings.Default.temperature;
                 trans.JulianDateUTC = jd;
+                trans.SetJ2000(ra, dec);
+                trans.Refraction = Settings.Default.refraction;
+                trans.Refresh();
                 alt = trans.ElevationTopocentric;
                 az = trans.AzimuthTopocentric;
             }
@@ -410,13 +422,14 @@ namespace ASCOM.PushToGo
         /// <param name="sync">Sync or Async</param>
         private void slewTo(double ra, double dec, bool sync)
         {
+            ra = Math.IEEERemainder(ra * 15, 360.0);
             if (sync)
             {
-                CommandString("goto " + ra.ToString() + " " + dec.ToString(), false);
+                CommandString("goto " + ra + " " + dec, false);
             }
             else
             {
-                CommandBlind("goto " + ra.ToString() + " " + dec.ToString(), false);
+                CommandBlind("goto " + ra + " " + dec, false);
             }
         }
         #endregion
@@ -465,12 +478,14 @@ namespace ASCOM.PushToGo
             }
         }
 
+        private bool atHome = false;
+
         public bool AtHome
         {
             get
             {
-                tl.LogMessage("AtHome", "Get - " + false.ToString());
-                return false;
+                tl.LogMessage("AtHome", "Get - " + atHome.ToString());
+                return atHome;
             }
         }
 
@@ -478,8 +493,8 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("AtPark", "Get - " + false.ToString());
-                return false;
+                tl.LogMessage("AtPark", "Get - " + atHome.ToString());
+                return atHome;
             }
         }
 
@@ -690,13 +705,13 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("DoesRefraction Get", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("DoesRefraction", false);
+                tl.LogMessage("DoesRefraction Get", Settings.Default.refraction.ToString());
+                return Settings.Default.refraction;
             }
             set
             {
-                tl.LogMessage("DoesRefraction Set", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("DoesRefraction", true);
+                tl.LogMessage("DoesRefraction Set", value.ToString());
+                Settings.Default.refraction = value;
             }
         }
 
@@ -720,8 +735,8 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("FocalLength Get", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("FocalLength", false);
+                tl.LogMessage("FocalLength Get", Settings.Default.focalLength.ToString());
+                return Settings.Default.focalLength;
             }
         }
 
@@ -729,13 +744,15 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("GuideRateDeclination Get", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("GuideRateDeclination", false);
+                double guideRate = Double.Parse(CommandString("speed guide", false)) * sidereal_speed;
+                tl.LogMessage("GuideRateDeclination Get", guideRate.ToString());
+                return guideRate;
             }
             set
             {
-                tl.LogMessage("GuideRateDeclination Set", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("GuideRateDeclination", true);
+                tl.LogMessage("GuideRateDeclination Set", value.ToString());
+                double guideSidereal = value / sidereal_speed;
+                CommandBlind("speed guide " + guideSidereal, false);
             }
         }
 
@@ -743,13 +760,15 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("GuideRateRightAscension Get", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("GuideRateRightAscension", false);
+                double guideRate = Double.Parse(CommandString("speed guide", false)) * sidereal_speed;
+                tl.LogMessage("GuideRateRightAscension Get", guideRate.ToString());
+                return guideRate;
             }
             set
             {
-                tl.LogMessage("GuideRateRightAscension Set", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("GuideRateRightAscension", true);
+                tl.LogMessage("GuideRateRightAscension Set", value.ToString());
+                double guideSidereal = value / sidereal_speed;
+                CommandBlind("speed guide " + guideSidereal, false);
             }
         }
 
@@ -757,8 +776,9 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("IsPulseGuiding Get", "Not implemented");
-                throw new ASCOM.PropertyNotImplementedException("IsPulseGuiding", false);
+                bool isPulseGuiding = CommandString("status", false).Contains("guiding");
+                tl.LogMessage("IsPulseGuiding Get", isPulseGuiding.ToString());
+                return isPulseGuiding;
             }
         }
 
@@ -772,6 +792,7 @@ namespace ASCOM.PushToGo
         {
             tl.LogMessage("Park", "");
             CommandString("goto index", false);
+            atHome = true;
         }
 
         public void PulseGuide(GuideDirections Direction, int Duration)
@@ -942,10 +963,14 @@ namespace ASCOM.PushToGo
             lock (trans)
             {
                 var jd = utilities.DateUTCToJulian(DateTime.UtcNow);
-                trans.SetAzimuthElevation(Azimuth, Altitude);
                 trans.SiteLatitude = SiteLatitude;
                 trans.SiteLongitude = SiteLongitude;
+                trans.SiteElevation = Settings.Default.elevation;
+                trans.SiteTemperature = Settings.Default.temperature;
                 trans.JulianDateUTC = jd;
+                trans.Refraction = Settings.Default.refraction;
+                trans.SetAzimuthElevation(Azimuth, Altitude);
+                trans.Refresh();
                 ra = trans.RAJ2000;
                 dec = trans.DecJ2000;
             }
@@ -960,10 +985,14 @@ namespace ASCOM.PushToGo
             lock (trans)
             {
                 var jd = utilities.DateUTCToJulian(DateTime.UtcNow);
-                trans.SetAzimuthElevation(Azimuth, Altitude);
                 trans.SiteLatitude = SiteLatitude;
                 trans.SiteLongitude = SiteLongitude;
+                trans.SiteElevation = Settings.Default.elevation;
+                trans.SiteTemperature = Settings.Default.temperature;
                 trans.JulianDateUTC = jd;
+                trans.Refraction = Settings.Default.refraction;
+                trans.SetAzimuthElevation(Azimuth, Altitude);
+                trans.Refresh();
                 ra = trans.RAJ2000;
                 dec = trans.DecJ2000;
             }
@@ -1152,6 +1181,7 @@ namespace ASCOM.PushToGo
         public void Unpark()
         {
             tl.LogMessage("Unpark", "");
+            atHome = false;
         }
 
         #endregion
