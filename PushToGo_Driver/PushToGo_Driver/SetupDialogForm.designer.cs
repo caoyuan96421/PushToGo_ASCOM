@@ -48,12 +48,13 @@ namespace ASCOM.PushToGo
             this.label1 = new System.Windows.Forms.Label();
             this.textBoxLongitude = new System.Windows.Forms.TextBox();
             this.label8 = new System.Windows.Forms.Label();
-            this.chkRefraction = new System.Windows.Forms.CheckBox();
-            this.comboBoxComPort = new System.Windows.Forms.ComboBox();
-            this.chkTrace = new System.Windows.Forms.CheckBox();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.textBoxGuideSpeed = new System.Windows.Forms.TextBox();
             this.label9 = new System.Windows.Forms.Label();
+            this.chkRefraction = new System.Windows.Forms.CheckBox();
+            this.comboBoxComPort = new System.Windows.Forms.ComboBox();
+            this.chkTrace = new System.Windows.Forms.CheckBox();
+            this.buttonSyncTime = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.picASCOM)).BeginInit();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
@@ -175,7 +176,7 @@ namespace ASCOM.PushToGo
             // 
             // textBoxElevation
             // 
-            this.textBoxElevation.Location = new System.Drawing.Point(87, 15);
+            this.textBoxElevation.Location = new System.Drawing.Point(107, 15);
             this.textBoxElevation.Name = "textBoxElevation";
             this.textBoxElevation.Size = new System.Drawing.Size(73, 20);
             this.textBoxElevation.TabIndex = 17;
@@ -192,7 +193,7 @@ namespace ASCOM.PushToGo
             // 
             // textBoxLatitude
             // 
-            this.textBoxLatitude.Location = new System.Drawing.Point(87, 66);
+            this.textBoxLatitude.Location = new System.Drawing.Point(107, 66);
             this.textBoxLatitude.Name = "textBoxLatitude";
             this.textBoxLatitude.ReadOnly = true;
             this.textBoxLatitude.Size = new System.Drawing.Size(73, 20);
@@ -227,7 +228,7 @@ namespace ASCOM.PushToGo
             // 
             // textBoxTemp
             // 
-            this.textBoxTemp.Location = new System.Drawing.Point(87, 40);
+            this.textBoxTemp.Location = new System.Drawing.Point(107, 40);
             this.textBoxTemp.Name = "textBoxTemp";
             this.textBoxTemp.Size = new System.Drawing.Size(73, 20);
             this.textBoxTemp.TabIndex = 23;
@@ -244,7 +245,7 @@ namespace ASCOM.PushToGo
             // 
             // textBoxLongitude
             // 
-            this.textBoxLongitude.Location = new System.Drawing.Point(87, 92);
+            this.textBoxLongitude.Location = new System.Drawing.Point(107, 92);
             this.textBoxLongitude.Name = "textBoxLongitude";
             this.textBoxLongitude.ReadOnly = true;
             this.textBoxLongitude.Size = new System.Drawing.Size(73, 20);
@@ -259,6 +260,35 @@ namespace ASCOM.PushToGo
             this.label8.Size = new System.Drawing.Size(54, 13);
             this.label8.TabIndex = 20;
             this.label8.Text = "Longitude";
+            // 
+            // groupBox3
+            // 
+            this.groupBox3.Controls.Add(this.textBoxGuideSpeed);
+            this.groupBox3.Controls.Add(this.label9);
+            this.groupBox3.Location = new System.Drawing.Point(206, 138);
+            this.groupBox3.Name = "groupBox3";
+            this.groupBox3.Size = new System.Drawing.Size(200, 79);
+            this.groupBox3.TabIndex = 21;
+            this.groupBox3.TabStop = false;
+            this.groupBox3.Text = "Mount Settings";
+            // 
+            // textBoxGuideSpeed
+            // 
+            this.textBoxGuideSpeed.Location = new System.Drawing.Point(107, 23);
+            this.textBoxGuideSpeed.Name = "textBoxGuideSpeed";
+            this.textBoxGuideSpeed.ReadOnly = true;
+            this.textBoxGuideSpeed.Size = new System.Drawing.Size(73, 20);
+            this.textBoxGuideSpeed.TabIndex = 25;
+            this.textBoxGuideSpeed.LostFocus += new System.EventHandler(this.textBoxGuideSpeed_TextChanged);
+            // 
+            // label9
+            // 
+            this.label9.AutoSize = true;
+            this.label9.Location = new System.Drawing.Point(12, 26);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(92, 13);
+            this.label9.TabIndex = 24;
+            this.label9.Text = "Guide Speed      x";
             // 
             // chkRefraction
             // 
@@ -288,6 +318,7 @@ namespace ASCOM.PushToGo
             // 
             this.chkTrace.AutoSize = true;
             this.chkTrace.Checked = global::ASCOM.PushToGo.Properties.Settings.Default.traceEnabled;
+            this.chkTrace.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chkTrace.DataBindings.Add(new System.Windows.Forms.Binding("Checked", global::ASCOM.PushToGo.Properties.Settings.Default, "traceEnabled", true, System.Windows.Forms.DataSourceUpdateMode.OnPropertyChanged));
             this.chkTrace.Location = new System.Drawing.Point(12, 36);
             this.chkTrace.Name = "chkTrace";
@@ -296,39 +327,23 @@ namespace ASCOM.PushToGo
             this.chkTrace.Text = "Trace on";
             this.chkTrace.UseVisualStyleBackColor = true;
             // 
-            // groupBox3
+            // buttonSyncTime
             // 
-            this.groupBox3.Controls.Add(this.textBoxGuideSpeed);
-            this.groupBox3.Controls.Add(this.label9);
-            this.groupBox3.Location = new System.Drawing.Point(206, 138);
-            this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(200, 79);
-            this.groupBox3.TabIndex = 21;
-            this.groupBox3.TabStop = false;
-            this.groupBox3.Text = "Mount Settings";
-            // 
-            // textBoxGuideSpeed
-            // 
-            this.textBoxGuideSpeed.Location = new System.Drawing.Point(87, 23);
-            this.textBoxGuideSpeed.Name = "textBoxGuideSpeed";
-            this.textBoxGuideSpeed.ReadOnly = true;
-            this.textBoxGuideSpeed.Size = new System.Drawing.Size(73, 20);
-            this.textBoxGuideSpeed.TabIndex = 25;
-            // 
-            // label9
-            // 
-            this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(12, 26);
-            this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(77, 13);
-            this.label9.TabIndex = 24;
-            this.label9.Text = "Guide Speed x";
+            this.buttonSyncTime.Enabled = false;
+            this.buttonSyncTime.Location = new System.Drawing.Point(107, 42);
+            this.buttonSyncTime.Name = "buttonSyncTime";
+            this.buttonSyncTime.Size = new System.Drawing.Size(75, 23);
+            this.buttonSyncTime.TabIndex = 26;
+            this.buttonSyncTime.Text = "Sync Time";
+            this.buttonSyncTime.UseVisualStyleBackColor = true;
+            this.buttonSyncTime.Click += new System.EventHandler(this.buttonSyncTime_Click);
             // 
             // SetupDialogForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(495, 236);
+            this.Controls.Add(this.buttonSyncTime);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
@@ -386,5 +401,6 @@ namespace ASCOM.PushToGo
         private System.Windows.Forms.GroupBox groupBox3;
         private System.Windows.Forms.TextBox textBoxGuideSpeed;
         private System.Windows.Forms.Label label9;
+        private System.Windows.Forms.Button buttonSyncTime;
     }
 }

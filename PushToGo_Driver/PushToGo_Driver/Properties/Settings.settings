@@ -3,10 +3,10 @@
   <Profiles />
   <Settings>
     <Setting Name="comPort" Type="System.String" Scope="User">
-      <Value Profile="(Default)">COM1</Value>
+      <Value Profile="(Default)">COM4</Value>
     </Setting>
     <Setting Name="traceEnabled" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">False</Value>
+      <Value Profile="(Default)">True</Value>
     </Setting>
     <Setting Name="slewSettleTime" Type="System.Int16" Scope="User">
       <Value Profile="(Default)">0</Value>

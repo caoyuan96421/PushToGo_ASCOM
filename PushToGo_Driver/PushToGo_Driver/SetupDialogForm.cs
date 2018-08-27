@@ -33,13 +33,19 @@ namespace ASCOM.PushToGo
                 textBoxLongitude.ReadOnly = false;
                 textBoxLongitude.Text = new ASCOM.Utilities.Util().DegreesToDMS(ts.SiteLongitude);
 
-                // COM port cannot be changed
+                textBoxGuideSpeed.ReadOnly = false;
+                textBoxGuideSpeed.Text = (ts.GuideRateRightAscension/Telescope.sidereal_speed).ToString();
+
+                buttonSyncTime.Enabled = true;
+
+                // COM port cannot be changed when connected
                 comboBoxComPort.Enabled = false;
             }
             else
             {
                 textBoxLatitude.Text = "";
                 textBoxLongitude.Text = "";
+                textBoxGuideSpeed.Text = "";
             }
         }
 
@@ -139,6 +145,22 @@ namespace ASCOM.PushToGo
                 textBoxLongitude.Text = util.DegreesToDMS(ts.SiteLongitude);
             }
         }
-        
+
+        private void textBoxGuideSpeed_TextChanged(object sender, EventArgs e)
+        {
+            if (ts != null && Double.TryParse(textBoxGuideSpeed.Text, out double gs) && gs > 0)
+            {
+                ts.GuideRateRightAscension = ts.GuideRateDeclination = gs * Telescope.sidereal_speed;
+                textBoxGuideSpeed.Text = gs.ToString();
+            }
+        }
+
+        private void buttonSyncTime_Click(object sender, EventArgs e)
+        {
+            if (ts != null)
+            {
+                ts.UTCDate = DateTime.UtcNow;
+            }
+        }
     }
 }

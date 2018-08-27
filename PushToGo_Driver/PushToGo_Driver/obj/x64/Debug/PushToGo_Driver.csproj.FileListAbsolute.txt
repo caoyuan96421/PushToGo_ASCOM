@@ -21,7 +21,6 @@ D:\GitHub\PushToGo_ASCOM\PushToGo_Driver\PushToGo_Driver\bin\x64\Debug\ASCOM.Exc
 D:\GitHub\PushToGo_ASCOM\PushToGo_Driver\PushToGo_Driver\bin\x64\Debug\ASCOM.Internal.Extensions.xml
 D:\GitHub\PushToGo_ASCOM\PushToGo_Driver\PushToGo_Driver\bin\x64\Debug\ASCOM.SettingsProvider.xml
 D:\GitHub\PushToGo_ASCOM\PushToGo_Driver\PushToGo_Driver\bin\x64\Debug\ASCOM.Utilities.xml
-D:\GitHub\PushToGo_ASCOM\PushToGo_Driver\PushToGo_Driver\obj\x64\Debug\PushToGo_Driver.csprojAssemblyReference.cache
 D:\GitHub\PushToGo_ASCOM\PushToGo_Driver\PushToGo_Driver\obj\x64\Debug\ASCOM.PushToGo.Properties.Resources.resources
 D:\GitHub\PushToGo_ASCOM\PushToGo_Driver\PushToGo_Driver\obj\x64\Debug\ASCOM.PushToGo.SetupDialogForm.resources
 D:\GitHub\PushToGo_ASCOM\PushToGo_Driver\PushToGo_Driver\obj\x64\Debug\PushToGo_Driver.csproj.GenerateResource.cache
@@ -29,3 +28,4 @@ D:\GitHub\PushToGo_ASCOM\PushToGo_Driver\PushToGo_Driver\obj\x64\Debug\PushToGo_
 D:\GitHub\PushToGo_ASCOM\PushToGo_Driver\PushToGo_Driver\obj\x64\Debug\PushToGo_Driver.csproj.CopyComplete
 D:\GitHub\PushToGo_ASCOM\PushToGo_Driver\PushToGo_Driver\obj\x64\Debug\ASCOM.PushToGo.Telescope.dll
 D:\GitHub\PushToGo_ASCOM\PushToGo_Driver\PushToGo_Driver\obj\x64\Debug\ASCOM.PushToGo.Telescope.pdb
+D:\GitHub\PushToGo_ASCOM\PushToGo_Driver\PushToGo_Driver\obj\x64\Debug\PushToGo_Driver.csprojAssemblyReference.cache

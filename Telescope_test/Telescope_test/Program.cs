@@ -43,20 +43,32 @@ namespace ASCOM
 
             Console.WriteLine("CurrentPos: " + device.RightAscension + " " + device.Declination);
             Console.WriteLine("CurrentAltAzPos: " + device.Altitude + " " + device.Azimuth);
-            
+
+            Console.WriteLine("PierSide: " + device.SideOfPier.ToString());
+
             if (device.AtPark)
                 device.Unpark();
 
             device.Tracking = true;
 
             Console.WriteLine("Test slewing");
-            device.SlewToCoordinates(15, 50);
+            device.SlewToAltAz(15, 50);
 
-            Thread.Sleep(500);
-            device.SetupDialog(); // show setup
+            Console.WriteLine("CurrentAltAzPos: " + device.Altitude + " " + device.Azimuth);
 
-            Console.WriteLine("Test homing");
-            device.Park();
+            device.GuideRateDeclination = 0.00208903731;
+
+            Console.WriteLine("GuideRate: >" + device.CommandString("speed guide", false) + "<");
+            Console.WriteLine("GuideRate: >" + device.CommandString("speed guide", false) + "<");
+            Console.WriteLine("GuideRate: >" + device.CommandString("speed guide", false) + "<");
+            Console.WriteLine("GuideRate: >" + device.CommandString("speed guide", false) + "<");
+            Console.WriteLine("GuideRate: " + device.GuideRateDeclination);
+
+            //Thread.Sleep(500);
+            //device.SetupDialog(); // show setup
+
+            //Console.WriteLine("Test homing");
+            //device.Park();
 
             device.Connected = false;
             Console.WriteLine("Press Enter to finish");

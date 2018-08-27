@@ -25,7 +25,7 @@ namespace ASCOM.PushToGo.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("COM1")]
+        [global::System.Configuration.DefaultSettingValueAttribute("COM4")]
         public string comPort {
             get {
                 return ((string)(this["comPort"]));
@@ -37,7 +37,7 @@ namespace ASCOM.PushToGo.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool traceEnabled {
             get {
                 return ((bool)(this["traceEnabled"]));
