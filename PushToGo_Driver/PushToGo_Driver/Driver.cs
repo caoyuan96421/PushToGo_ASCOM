@@ -296,25 +296,25 @@ namespace ASCOM.PushToGo
             set
             {
                 tl.LogMessage("Connected", "Set {0}", value);
-                if (value == IsConnected)
-                    return;
-
                 if (value)
                 {
                     connectedState = true;
                     LogMessage("Connected Set", "Connecting to port {0}", Settings.Default.comPort);
 
-                    serial.PortName = Settings.Default.comPort;
-                    serial.BaudRate = 115200;
-                    serial.Parity = Parity.None;
-                    serial.DataBits = 8;
-                    serial.StopBits = StopBits.One;
-                    serial.Handshake = Handshake.None;
-                    serial.ReadTimeout = 300000;
-                    serial.WriteTimeout = 500;
-                    serial.NewLine = "\n";
+                    if (!serial.IsOpen)
+                    {
+                        serial.PortName = Settings.Default.comPort;
+                        serial.BaudRate = 115200;
+                        serial.Parity = Parity.None;
+                        serial.DataBits = 8;
+                        serial.StopBits = StopBits.One;
+                        serial.Handshake = Handshake.None;
+                        serial.ReadTimeout = 300000;
+                        serial.WriteTimeout = 500;
+                        serial.NewLine = "\n";
 
-                    serial.Open();
+                        serial.Open();
+                    }
                 }
                 else
                 {
