@@ -514,8 +514,12 @@ namespace ASCOM.PushToGo
 
         public IAxisRates AxisRates(TelescopeAxes Axis)
         {
-            tl.LogMessage("AxisRates", "Get - " + Axis.ToString());
-            return new AxisRates(Axis);
+            double maxRate = 0;
+            if (Double.TryParse(CommandString("config max_speed",false), out maxRate))
+            {
+                tl.LogMessage("AxisRates", "Get - " + Axis.ToString() + '=' + maxRate);
+            }
+            return new AxisRates(Axis, maxRate);
         }
 
         public double Azimuth
@@ -542,8 +546,8 @@ namespace ASCOM.PushToGo
             tl.LogMessage("CanMoveAxis", "Get - " + Axis.ToString());
             switch (Axis)
             {
-                case TelescopeAxes.axisPrimary: return false;
-                case TelescopeAxes.axisSecondary: return false;
+                case TelescopeAxes.axisPrimary: return true;
+                case TelescopeAxes.axisSecondary: return true;
                 case TelescopeAxes.axisTertiary: return false;
                 default: throw new InvalidValueException("CanMoveAxis", Axis.ToString(), "0 to 2");
             }
@@ -571,7 +575,7 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("CanSetDeclinationRate", "Get - " + true.ToString());
+                tl.LogMessage("CanSetDeclinationRate", "Get - " + false.ToString());
                 return true;
             }
         }
@@ -607,7 +611,7 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                tl.LogMessage("CanSetRightAscensionRate", "Get - " + true.ToString());
+                tl.LogMessage("CanSetRightAscensionRate", "Get - " + false.ToString());
                 return true;
             }
         }
@@ -694,23 +698,37 @@ namespace ASCOM.PushToGo
             }
         }
 
+        public double SlewRate
+        {
+            get
+            {
+                double rate = 0.0;
+                if(!Double.TryParse(CommandString("speed slew", false), out rate))
+                {
+                    tl.LogMessage("SlewRate", "Get failed ");
+                }
+                else
+                    tl.LogMessage("SlewRate", "Get - " + rate.ToString());
+                return rate;
+            }
+            set
+            {
+                tl.LogMessage("SlewRate Set", value.ToString());
+                CommandString("speed slew " + value.ToString(), false);
+            }
+        }
+
         public double DeclinationRate
         {
             get
             {
-                double declination = 0.0;
-                if(!Double.TryParse(CommandString("speed slew", false), out declination))
-                {
-                    tl.LogMessage("DeclinationRate", "Get failed ");
-                }
-                else
-                    tl.LogMessage("DeclinationRate", "Get - " + declination.ToString());
-                return declination;
+                tl.LogMessage("DeclinationRate Get", 0.ToString());
+                return 0;
             }
             set
             {
                 tl.LogMessage("DeclinationRate Set", value.ToString());
-                CommandString("speed slew " + value.ToString(), false);
+                throw new ASCOM.MethodNotImplementedException("DeclinationRate");
             }
         }
 
@@ -826,8 +844,80 @@ namespace ASCOM.PushToGo
 
         public void MoveAxis(TelescopeAxes Axis, double Rate)
         {
-            tl.LogMessage("MoveAxis", "Not implemented");
-            throw new ASCOM.MethodNotImplementedException("MoveAxis");
+            if (AtPark)
+            {
+                throw new ASCOM.ParkedException("MoveAxis");
+            }
+            tl.LogMessage("MoveAxis", Axis.ToString() + " @ " + Rate.ToString() + "deg/s");
+
+            string currentNudge = CommandString("nudge get", false);
+            int ra_dir = 0;
+            int dec_dir = 0;
+            if (currentNudge.Contains("east"))
+                ra_dir = 1;
+            else if (currentNudge.Contains("west"))
+                ra_dir = -1;
+            if (currentNudge.Contains("north"))
+                dec_dir = 1;
+            else if (currentNudge.Contains("south"))
+                dec_dir = -1;
+            
+            switch (Axis)
+            {
+                case TelescopeAxes.axisPrimary: // RA Axis
+                    if (Rate == 0)
+                    {
+                        ra_dir = 0; // Stop
+                    }
+                    else if(Rate > 0)
+                    {
+                        ra_dir = 1;
+                    }
+                    else
+                    {
+                        ra_dir = -1;
+                    }
+                    break;
+                case TelescopeAxes.axisSecondary:
+                    if (Rate == 0)
+                    {
+                        dec_dir = 0; // Stop
+                    }
+                    else if (Rate > 0)
+                    {
+                        dec_dir = 1;
+                    }
+                    else
+                    {
+                        dec_dir = -1;
+                    }
+                    break;
+                default:
+                    throw new ASCOM.InvalidValueException(Axis.ToString());
+            }
+
+            // First set rate
+            SlewRate = Rate;
+
+            // Then set direction
+            string cmd = "";
+            if (ra_dir == 1)
+                cmd += " east";
+            else if (ra_dir == -1)
+                cmd += " west";
+            if (dec_dir == 1)
+                cmd += " north";
+            else if (dec_dir == -1)
+                cmd += " west";
+            if (cmd.Length == 0)
+            {
+                cmd = "nudge stop";
+            }
+            else
+            {
+                cmd = "nudge" + cmd;
+            }
+            CommandString(cmd, false);
         }
 
         public void Park()
@@ -883,19 +973,13 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                double ra = 0.0;
-                if (!Double.TryParse(CommandString("speed slew", false), out ra))
-                {
-                    tl.LogMessage("RightAscensionRate", "Get failed ");
-                }
-                else
-                    tl.LogMessage("RightAscensionRate", "Get - " + ra.ToString());
-                return ra;
+                tl.LogMessage("RightAscensionRate Get", 0.ToString());
+                return 0;
             }
             set
             {
                 tl.LogMessage("RightAscensionRate Set", value.ToString());
-                CommandString("speed slew " + value.ToString(), false);
+                throw new ASCOM.MethodNotImplementedException("RightAscensionRate");
             }
         }
 
