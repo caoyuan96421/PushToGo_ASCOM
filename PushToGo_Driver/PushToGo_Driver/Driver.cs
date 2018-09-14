@@ -576,7 +576,7 @@ namespace ASCOM.PushToGo
             get
             {
                 tl.LogMessage("CanSetDeclinationRate", "Get - " + false.ToString());
-                return true;
+                return false;
             }
         }
 
@@ -612,7 +612,7 @@ namespace ASCOM.PushToGo
             get
             {
                 tl.LogMessage("CanSetRightAscensionRate", "Get - " + false.ToString());
-                return true;
+                return false;
             }
         }
 
@@ -728,7 +728,7 @@ namespace ASCOM.PushToGo
             set
             {
                 tl.LogMessage("DeclinationRate Set", value.ToString());
-                throw new ASCOM.MethodNotImplementedException("DeclinationRate");
+                throw new ASCOM.PropertyNotImplementedException("DeclinationRate");
             }
         }
 
@@ -844,9 +844,17 @@ namespace ASCOM.PushToGo
 
         public void MoveAxis(TelescopeAxes Axis, double Rate)
         {
+            if (Axis != TelescopeAxes.axisPrimary && Axis != TelescopeAxes.axisSecondary)
+            {
+                throw new ASCOM.InvalidOperationException("MoveAxis");
+            }
             if (AtPark)
             {
                 throw new ASCOM.ParkedException("MoveAxis");
+            }
+            if(Rate < -AxisRates(Axis)[1].Maximum || Rate > AxisRates(Axis)[1].Maximum)
+            {
+                throw new ASCOM.InvalidValueException("MoveAxis");
             }
             tl.LogMessage("MoveAxis", Axis.ToString() + " @ " + Rate.ToString() + "deg/s");
 
@@ -897,7 +905,7 @@ namespace ASCOM.PushToGo
             }
 
             // First set rate
-            SlewRate = Rate;
+            CommandString("speed slew " + Rate, false);
 
             // Then set direction
             string cmd = "";
@@ -908,7 +916,7 @@ namespace ASCOM.PushToGo
             if (dec_dir == 1)
                 cmd += " north";
             else if (dec_dir == -1)
-                cmd += " west";
+                cmd += " south";
             if (cmd.Length == 0)
             {
                 cmd = "nudge stop";
@@ -979,7 +987,7 @@ namespace ASCOM.PushToGo
             set
             {
                 tl.LogMessage("RightAscensionRate Set", value.ToString());
-                throw new ASCOM.MethodNotImplementedException("RightAscensionRate");
+                throw new ASCOM.PropertyNotImplementedException("RightAscensionRate");
             }
         }
 
@@ -1041,7 +1049,7 @@ namespace ASCOM.PushToGo
                 // allow for the longitude
                 siderealTime += SiteLongitude / 360.0 * 24.0;
                 // reduce to the range 0 to 24 hours
-                siderealTime = siderealTime % 24.0;
+                siderealTime = Math.IEEERemainder(siderealTime - 12.0, 24.0) + 12.0;
                 tl.LogMessage("SiderealTime", "Get - " + siderealTime.ToString());
                 return siderealTime;
             }
@@ -1244,7 +1252,8 @@ namespace ASCOM.PushToGo
         {
             get
             {
-                bool slewing = CommandString("status", false) == "slewing";
+                string status = CommandString("status", false);
+                bool slewing = (new string[] { "slewing", "nudging", "nudging_tracking" }).Contains(status);
                 tl.LogMessage("Slewing Get", slewing.ToString());
                 return slewing;
             }
